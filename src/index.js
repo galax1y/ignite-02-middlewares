@@ -13,20 +13,20 @@ function checksExistsUserAccount(request, response, next) {
   const { username } = request.headers
 
   // Try to find the account based on the username provided in the request
-  const account = users.find(user => user.username === username)
+  const user = users.find(user => user.username === username)
 
   // Should return status code 404 if user does not exist
-  if (!account) {
+  if (!user) {
     return response.status(404).json({message: 'User not found'}) 
   }
 
-  // Send it to the next step, append user account to the request
-  request.user = account
+  // Send it to the next step, append user to the request
+  request.user = user
   next()
 }
 
 function checksCreateTodosUserAvailability(request, response, next) {
-  const user = request.user
+  const { user } = request
 
   // Should be able to create unlimited todos if it's a premium account user.
   if (user.pro) {
@@ -49,31 +49,41 @@ function checksTodoExists(request, response, next) {
   // ID in request parameters should be a valid UUID
   if (!validate(id)) {
     return response.status(400)
-    .json({message: 'Id in request parameters is not a valid UUID'})
+    .json({error: 'Id in request parameters is not a valid UUID'})
   }
   
   // Should be able to find the user through the username
-  const user = users.find(user => user.username === username)
+  const user = users.find(user => username === user.username)
   if (!user) {
     return response.status(404)
-    .json({message: 'User not found'})
+    .json({error: 'User not found'})
   }
 
   // Should be able to find the todo by the id
-  const todo = user.todos.find(todo => todo.id === id)
+  const todo = user.todos.find(todo => id === todo.id)
   if (!todo) {
     return response.status(404)
-    .json({message: 'Todo not found'})
+    .json({error: 'Todo not found'})
   }
 
   // If everything is valid, append data to the request and send it to the next step
-  request.user = user
   request.todo = todo
+  request.user = user
   next()
 }
 
 function findUserById(request, response, next) {
-  // Complete aqui
+  const { id } = request.params
+
+  const user = users.find(user => user.id === id)
+
+  if (!user) {
+    return response.status(404)
+    .json({message: 'Id does not belong to any user'})
+  }
+
+  request.user = user
+  next()  
 }
 
 app.post('/users', (request, response) => {
