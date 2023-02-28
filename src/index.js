@@ -10,15 +10,66 @@ app.use(cors());
 const users = [];
 
 function checksExistsUserAccount(request, response, next) {
-  // Complete aqui
+  const { username } = request.headers
+
+  // Try to find the account based on the username provided in the request
+  const account = users.find(user => user.username === username)
+
+  // Should return status code 404 if user does not exist
+  if (!account) {
+    return response.status(404).json({message: 'User not found'}) 
+  }
+
+  // Send it to the next step, append user account to the request
+  request.user = account
+  next()
 }
 
 function checksCreateTodosUserAvailability(request, response, next) {
-  // Complete aqui
+  const user = request.user
+
+  // Should be able to create unlimited todos if it's a premium account user.
+  if (user.pro) {
+    next()
+  }
+
+  // Should be able to create up to 10 todos if it's a free account user.
+  if (!user.pro && user.todos.length >= 10) {
+    return response.status(403)
+    .json({message: 'You have reached the limit of free todos, sign Premium for more.'}) 
+  }
+
+  next()
 }
 
 function checksTodoExists(request, response, next) {
-  // Complete aqui
+  const { username } = request.headers
+  const { id } = request.params
+
+  // ID in request parameters should be a valid UUID
+  if (!validate(id)) {
+    return response.status(400)
+    .json({message: 'Id in request parameters is not a valid UUID'})
+  }
+  
+  // Should be able to find the user through the username
+  const user = users.find(user => user.username === username)
+  if (!user) {
+    return response.status(404)
+    .json({message: 'User not found'})
+  }
+
+  // Should be able to find the todo by the id
+  const todo = user.todos.find(todo => todo.id === id)
+  if (!todo) {
+    return response.status(404)
+    .json({message: 'Todo not found'})
+  }
+
+  // If everything is valid, append data to the request and send it to the next step
+  request.user = user
+  request.todo = todo
+  next()
 }
 
 function findUserById(request, response, next) {
